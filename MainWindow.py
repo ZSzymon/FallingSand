@@ -1,18 +1,18 @@
 ##
 ## MIT License
-## 
-## Copyright (c) 2017 Luca Angioloni
-## 
+##
+## Copyright (c) 2022 Żywko Szymon
+##
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
 ## in the Software without restriction, including without limitation the rights
 ## to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 ## copies of the Software, and to permit persons to whom the Software is
 ## furnished to do so, subject to the following conditions:
-## 
+##
 ## The above copyright notice and this permission notice shall be included in all
 ## copies or substantial portions of the Software.
-## 
+##
 ## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 ## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 ## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,19 +21,19 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 ##
+
+
 import PyQt5
 from PyQt5.QtCore import (Qt, pyqtSlot)
 
 from PyQt5.QtWidgets import (QSlider, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QFileDialog, QMessageBox,
                              QCheckBox)
-
 from MapViewer import MapViewer
 from MyWidgets import PatternMenu, PlayPauseButton, SandGenerateMethodMenu
 
 
 class MainWindow(QWidget):
-    """
-    Main window controller
+    """Main window controller
 
     Attributes:
         model         reference to an object of class GameOfLife (the model)
@@ -52,7 +52,6 @@ class MainWindow(QWidget):
     def init_ui(self):
         """Method to initialize the UI: layouts and components"""
         self.setWindowTitle("Falling Sand")
-
         self.viewer = MapViewer()
         self.viewer.resize(800, 600)
         self.viewer.set_model(self.model)
@@ -156,40 +155,6 @@ class MainWindow(QWidget):
         speed = 1010 - self.slider.value()
         self.loop.set_speed(speed)
 
-    def load_clicked(self):
-        """Slot for the Load button click event. Opens a dialog to choose a file then signals the model to load it"""
-        if self.loop.is_going():
-            self.loop.play_pause_button()
-            self.play_pause_button.changeText()
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
-                                                  "All Files (*);;PNG Save File (*.png);;TXT Save File (*.txt)",
-                                                  options=options)
-        if fileName:
-            if self.model.load(fileName) is False:
-                QMessageBox.about(self, "File Error", "File selected is not valid")
-            else:
-                self.menu.addItem("- Custom pattern -")
-                self.menu.setCurrentText("- Custom pattern -")
-        else:
-            QMessageBox.about(self, "File Name Error", "No file name selected")
-        self.viewer.updateView()
-
-    def save_clicked(self):
-        """Slot for the Save button click event. Opens a dialog to choose a file then signals the model to save to it"""
-        if self.loop.is_going():
-            self.loop.play_pause_button()
-            self.play_pause_button.changeText()
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "",
-                                                  "Save File as PNG (*.png)", options=options)
-        if fileName:
-            self.model.save(fileName)
-        else:
-            QMessageBox.about(self, "File Name Error", "No file name selected")
-
     def resizeEvent(self, ev):
         """Slot for window resize event (Override)"""
         # self.viewer.updateView()
@@ -211,17 +176,6 @@ class MainWindow(QWidget):
         if self.loop.is_going():
             self.loop.play_pause()
             self.play_pause_button.changeText()
-        #if text == "Empty":
-        #    self.model.reinitialize('empty')
-        #elif text == "Random":
-        #    self.model.reinitialize('random')
-        #    self.viewer.updateView()
-        #elif text != "- Custom pattern -":
-        #    last = self.menu.count() - 1
-        #    if self.menu.itemText(last) == "- Custom pattern -":
-        #        self.menu.removeItem(last)
-        #    elif self.model.read_from_file(text) is False:
-        #        QMessageBox.about(self, "File Error", "File selected is not valid")
 
         is_loaded_correctly = self.model.read_from_file(text)
         if is_loaded_correctly is False:

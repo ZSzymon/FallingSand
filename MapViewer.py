@@ -1,7 +1,7 @@
 ##
 ## MIT License
 ## 
-## Copyright (c) 2017 Luca Angioloni
+## Copyright (c) 2022 Żywko Szymon
 ## 
 ## Permission is hereby granted, free of charge, to any person obtaining a copy
 ## of this software and associated documentation files (the "Software"), to deal
@@ -65,7 +65,6 @@ class MapViewer(QLabel):
 
     def updateView(self, view=None):
         """Update the view converting the current state (np.ndarray) to an image (QPixmap) and showing it on screen"""
-
         map = self.model.get_state() if not view else view
         self.h = map.shape[0]
         self.w = map.shape[1]
