@@ -116,12 +116,8 @@ class MapViewer(QLabel):
             self.drawing = True
             x = event.pos().x()
             y = event.pos().y()
-            print(f"Clicked at x: {x} y: {y}")
             x = event.pos().x() - self.V_margin
             y = event.pos().y() - self.H_margin
-            v_margin = self.V_margin
-            h_margin = self.H_margin
-            print(f"Margin correction : Clicked at x: {x} y: {y}")
             # check if mouse is inside the bounds of the board
             if 0 < y < self.pixmap().height() and 0 < x < self.pixmap().width():
                 # convert widget coordinate to state indexes
