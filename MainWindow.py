@@ -70,9 +70,6 @@ class MainWindow(QWidget):
         self.slider.setTickInterval(10)
         self.slider.setTickPosition(QSlider.TicksBelow)
 
-
-
-
         self.menu_label = QLabel("Known Patterns: ")
         self.menu = PatternMenu()
         self.menu.currentTextChanged.connect(self.change_pattern)
@@ -91,7 +88,6 @@ class MainWindow(QWidget):
         self.prevStep.setText("Previous Step")
         self.prevStep.clicked.connect(self.prev_clicked)
 
-
         top_h_box = QHBoxLayout()
         top_h_box.addWidget(self.menu_label)
         top_h_box.addWidget(self.menu)
@@ -99,7 +95,6 @@ class MainWindow(QWidget):
         top_h_box.addWidget(self.menu_sand_label)
         top_h_box.addWidget(self.menu_sand)
         top_h_box.addWidget(self.generate_sand_button)
-
 
         bottom_h_box = QHBoxLayout()
         bottom_h_box.addWidget(self.play_pause_button)
@@ -112,7 +107,6 @@ class MainWindow(QWidget):
         bottom_h_box.addWidget(self.prevStep)
         bottom_h_box.addWidget(self.nextStep)
 
-
         v_box = QVBoxLayout()
         v_box.addLayout(top_h_box)
         v_box.addWidget(self.viewer)
@@ -121,7 +115,6 @@ class MainWindow(QWidget):
         self.setLayout(v_box)
 
         self.play_pause_button.clicked.connect(self.play_pause_clicked)
-
         self.reset.clicked.connect(self.reset_clicked)
         self.slider.valueChanged.connect(self.slider_changed)
 
@@ -134,11 +127,9 @@ class MainWindow(QWidget):
         self.loop.play_pause()
         self.viewer.updateView()
 
-
     def stopSimulation(self):
         self.loop.play_pause()
         self.play_pause_button.changeText()
-
 
     def next_clicked(self):
         self.model.next()
@@ -201,39 +192,39 @@ class MainWindow(QWidget):
 
     def resizeEvent(self, ev):
         """Slot for window resize event (Override)"""
-        #self.viewer.updateView()
+        # self.viewer.updateView()
         super().resizeEvent(ev)
 
     def change_sand_generator(self, text):
         if self.loop.is_going():
-            self.loop.play_pause_button()
+            self.loop.play_pause()
             self.play_pause_button.changeText()
         if text == 'Top Edge':
-            self.model.reset()
             self.model.topEdgeGenerator()
-            self.viewer.updateView()
             pass
         if text == 'Central top two cells':
-            self.model.reset()
             self.model.centralEdgeGenerator()
             pass
-        self.viewer.updateView()
 
     def change_pattern(self, text):
         """Slot for the ComboBox changed state signal. Loads the selected known pattern"""
         if self.loop.is_going():
-            self.loop.play_pause_button()
+            self.loop.play_pause()
             self.play_pause_button.changeText()
-        if text == "Empty":
-            self.model.reinitialize('empty')
-        elif text == "Random":
-            self.model.reinitialize('random')
-            self.viewer.updateView()
-        elif text != "- Custom pattern -":
-            last = self.menu.count() - 1
-            if self.menu.itemText(last) == "- Custom pattern -":
-                self.menu.removeItem(last)
-            elif self.model.read_from_file(text) is False:
-                QMessageBox.about(self, "File Error", "File selected is not valid")
-        self.model.sandGenerator()
+        #if text == "Empty":
+        #    self.model.reinitialize('empty')
+        #elif text == "Random":
+        #    self.model.reinitialize('random')
+        #    self.viewer.updateView()
+        #elif text != "- Custom pattern -":
+        #    last = self.menu.count() - 1
+        #    if self.menu.itemText(last) == "- Custom pattern -":
+        #        self.menu.removeItem(last)
+        #    elif self.model.read_from_file(text) is False:
+        #        QMessageBox.about(self, "File Error", "File selected is not valid")
+
+        is_loaded_correctly = self.model.read_from_file(text)
+        if is_loaded_correctly is False:
+            QMessageBox.about(self, "File Error", "File selected is not valid")
+        #self.model.sandGenerator()
         self.viewer.updateView()

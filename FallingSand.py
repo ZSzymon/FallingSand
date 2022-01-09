@@ -1,10 +1,7 @@
 import os
 from settings import DISHES_DIR
 import numpy as np
-from PIL import Image
-from scipy import ndimage
-
-from PyQt5.QtCore import (Qt, pyqtSignal)
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget
 SAND = 100
 EMPTY = 255
@@ -21,20 +18,16 @@ class FallingSand(QWidget):
         super().__init__()
         self.sandGenerator = self.topEdgeGenerator
         self.init_states()
-        self.initial_pattern = 'small_bowl'
-        self.read_from_file('small_bowl')
-        self.sandGenerator()
+        self.initial_pattern = 'middleBow'
+        self.read_from_file('middleBow')
         self.mode = mode
         self.current_state = 0
         self.was_change = True
-
-        pass
 
     def setPlayPauseButton(self, button):
         self.play_pause = button
 
     def topEdgeGenerator(self):
-
         ten_percent = int(self.map.shape[0] / 10)
         rows = ten_percent if ten_percent > 0 else 1
         sands = np.full(self.map[:rows].shape, SAND)
@@ -53,23 +46,8 @@ class FallingSand(QWidget):
         self.add_state(np.copy(self.map))
 
     def init_states(self):
-        current_state = 0
         self.states = []
-
-    def reinitialize(self, mode='empty', x=100, y=150):
-        """
-        This method initializes the class attributes to the default values
-
-        Args:
-            x, y    default dimensions of the game board
-            mode    default initial game mode: empty or random
-        """
-        self.mode = mode
-        self.cols = x
-        self.rows = y
-
-        self.map = np.full((self.cols, self.rows), 255, dtype=np.uint8)
-        self.initial_state = np.copy(self.map)
+        self.current_state = 0
 
     def reset(self):
         self.read_from_file(self.initial_pattern)
@@ -77,25 +55,20 @@ class FallingSand(QWidget):
 
     def resetButtonAction(self):
         self.read_from_file(self.initial_pattern)
-        self.sandGenerator()
 
     def getCellIfExist(self, row, col):
         if 0 <= row < self.map.shape[0] and 0 <= col < self.map.shape[1]:
             return self.map[row, col]
         return None
 
-    def isCellWall(self, cell):
-        if cell is not None and cell == WALL:
-            return True
-        return False
+    def get_left_right_cells(self, row, col):
+        return self.getCellIfExist(row, col - 1), self.getCellIfExist(row, col + 1)
 
-    def isCellWallOrSand(self, cell):
-        if cell is not None and (cell == WALL or cell == SAND):
-            return True
-        return False
+    def get_diagonal_left_right_cells(self, row, col):
+        return self.getCellIfExist(row + 1, col - 1), self.getCellIfExist(row + 1, col + 1)
 
-    def isCellEmpty(self, cell):
-        if cell is not None and cell == EMPTY:
+    def is_cell(self, cell, cellType):
+        if cell is not None and cell == cellType:
             return True
         return False
 
@@ -103,16 +76,30 @@ class FallingSand(QWidget):
         if self.current_state > 0:
             self.current_state -= 1
 
-
-
     def next(self):
         if self.current_state + 1 >= len(self.states):
             self.calculate_next_state()
         else:
             self.current_state += 1
 
-
-
+    def handleSandMoveFor(self, row, col, newMap):
+        below_cell = self.getCellIfExist(row + 1, col)
+        left_below_cell, right_below_cell = self.get_diagonal_left_right_cells(row, col)
+        left_cell, right_cell = self.get_left_right_cells(row, col)
+        if self.is_cell(below_cell, EMPTY):
+            newMap[row, col] = EMPTY
+            newMap[row + 1, col] = SAND
+            self.was_change = True
+        elif self.is_cell(below_cell, SAND):
+            if self.is_cell(left_cell, EMPTY) and self.is_cell(left_below_cell, EMPTY):
+                newMap[row, col] = EMPTY
+                newMap[row + 1, col - 1] = SAND
+                self.was_change = True
+            elif self.is_cell(right_cell, EMPTY) and self.is_cell(right_below_cell, EMPTY):
+                newMap[row, col] = EMPTY
+                newMap[row + 1, col + 1] = SAND
+                self.was_change = True
+        return self.was_change, newMap
 
     def calculate_next_state(self):
         """
@@ -121,8 +108,7 @@ class FallingSand(QWidget):
         if below cell is wall and below left cell in empty then move sand left-down
         if below cell is wall and below right cell in empty then move sand right-down
         """
-        rows = self.map.shape[0]
-        cols = self.map.shape[1]
+        rows, cols = self.map.shape
         newMap = np.copy(self.states[-1])
         # iterate from end.
         self.was_change = False
@@ -130,31 +116,12 @@ class FallingSand(QWidget):
             for col in range(cols - 1, -1, -1):
                 cell = self.map[row, col]
                 if cell == SAND:
-                    below_cell = self.getCellIfExist(row + 1, col)
-                    left_below_cell = self.getCellIfExist(row + 1, col - 1)
-                    right_below_cell = self.getCellIfExist(row + 1, col + 1)
-                    left_cell = self.getCellIfExist(row, col-1)
-                    right_cell = self.getCellIfExist(row, col+1)
-                    if self.isCellEmpty(below_cell):
-                        newMap[row, col] = EMPTY
-                        newMap[row + 1, col] = SAND
-                        self.was_change = True
-                    elif self.isCellWallOrSand(below_cell):
-                        if self.isCellEmpty(left_cell) and self.isCellEmpty(left_below_cell):
-                            newMap[row, col] = EMPTY
-                            newMap[row+1, col-1] = SAND
-                            self.was_change = True
-                        elif self.isCellEmpty(right_cell) and self.isCellEmpty(right_below_cell):
-                            newMap[row, col] = EMPTY
-                            newMap[row+1, col+1] = SAND
-                            self.was_change = True
-
+                    self.was_change, newMap = self.handleSandMoveFor(row, col, newMap)
         if self.was_change:
             self.map = np.copy(newMap)
             self.add_state(np.copy(self.map))
         else:
             self.endOfSimulationSignal.emit()
-
 
     def read_from_file(self, filename):
         try:
@@ -169,7 +136,6 @@ class FallingSand(QWidget):
             self.rows = len(lines)
             self.cols = len(lines[0])
             self.map = np.zeros((self.rows, self.cols), dtype=np.uint8)
-
             for row, line in enumerate(lines):
                 for col, element in enumerate(line):
                     if element == "x":
@@ -196,5 +162,3 @@ class FallingSand(QWidget):
     def set_cell(self, i, j, value):
         self.map[i, j] = value
         self.add_state(np.copy(self.map))
-
-    pass

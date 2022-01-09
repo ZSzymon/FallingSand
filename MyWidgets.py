@@ -40,9 +40,9 @@ class PatternMenu(QComboBox):
     def __init__(self):
         super().__init__()
         self.path_to_patterns = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), 'patterns')
-        self.files = sorted([f for f in os.listdir(self.path_to_patterns) if not f.startswith('.')],
-                            key=lambda f: f.lower())
+        self.files = set([f for f in os.listdir(self.path_to_patterns) if not f.startswith('.')])
         self.addItems(self.files)
+        self.setCurrentText('middleBow' if 'middleBow' in self.files else self.files.pop())
 
 
 class SandGenerateMethodMenu(QComboBox):

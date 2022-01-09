@@ -25,9 +25,7 @@
 import sys
 
 from PyQt5.QtWidgets import QApplication  # pip install PyQt5
-
 from MainWindow import MainWindow
-from MapViewer import MapViewer
 from GolLoop import GolLoop
 from FallingSand import FallingSand
 
@@ -46,5 +44,6 @@ if __name__ == '__main__':
     timer = GolLoop()  # The game loop
     timer.timeout.connect(model.next)
     window = MainWindow(model, timer)  # The view controller / view (GUI)
-    model.endOfSimulationSignal.connect(window.stopSimulation)
+
+    model.endOfSimulationSignal.connect(window.stopSimulation) #own signal connection.
     sys.exit(app.exec_())
