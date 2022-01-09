@@ -21,9 +21,7 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 ##
-from functools import partial
 from timeit import default_timer as timer
-
 from PyQt5.QtCore import (Qt)
 from PyQt5.QtGui import QImage, qRgb, QPixmap
 from PyQt5.QtWidgets import (QLabel, QSizePolicy)
@@ -55,7 +53,6 @@ class MapViewer(QLabel):
         self.w = 0
         self.lastUpdate = timer()
 
-
     def set_model(self, model):
         """
         Set the reference to the model model.
@@ -69,27 +66,19 @@ class MapViewer(QLabel):
     def updateView(self, view=None):
         """Update the view converting the current state (np.ndarray) to an image (QPixmap) and showing it on screen"""
 
-
-
-        # All this conversion are not beautiful but necessary...
-
         map = self.model.get_state() if not view else view
-
         self.h = map.shape[0]
         self.w = map.shape[1]
         qim = self.toQImage(map)  # first convert to QImage
         qpix = QPixmap.fromImage(qim)  # then convert to QPixmap
         # set the pixmap and resize to fit the widget dimension
         self.setPixmap(qpix.scaled(self.size(), Qt.KeepAspectRatio, Qt.FastTransformation))
-
         self.lastUpdate = timer()  # update the lastUpdate time
         try:
             self.V_margin = (self.size().width() - self.pixmap().size().width()) / 2
-        except AttributeError:
-            self.V_margin = 0
-        try:
             self.H_margin = (self.size().height() - self.pixmap().size().height()) / 2
         except AttributeError:
+            self.V_margin = 0
             self.H_margin = 0
 
     def toQImage(self, im):
@@ -112,70 +101,29 @@ class MapViewer(QLabel):
 
     def mousePressEvent(self, event):
         """Slot for mouse press event (Override)"""
-        if event.button() == Qt.LeftButton:  # if left click draw living cells
-            self.drawing = True
-            x = event.pos().x()
-            y = event.pos().y()
+        self.handleMouseClickEvent(event, mouseButton=Qt.RightButton, color=0)
+        self.handleMouseClickEvent(event, mouseButton=Qt.LeftButton, color=255)
+
+    def getXYPosition(self, event, marginCorrection=True):
+        """Utility method to get x, y position from event..
+
+        :param event:
+        :param marginCorrection: bool to indicate if marginCorrection is considered.
+        :return:  x, y position from event.
+        """
+
+        if marginCorrection:
             x = event.pos().x() - self.V_margin
             y = event.pos().y() - self.H_margin
-            # check if mouse is inside the bounds of the board
-            if 0 < y < self.pixmap().height() and 0 < x < self.pixmap().width():
-                # convert widget coordinate to state indexes
-                row = int(y * self.h / self.pixmap().height())
-                col = int(x * self.w / self.pixmap().width())
-                print(f"Map index clicked: row {row} col {col}")
-                self.model.set_cell(row, col, 255)
-                self.updateView()
-#
-        if event.button() == Qt.RightButton:  # if right click kill cells
-            self.drawing = True
+        else:
             x = event.pos().x()
             y = event.pos().y()
-            print(f"Clicked at x: {x} y: {y}")
-            x = event.pos().x() - self.V_margin
-            y = event.pos().y() - self.H_margin
-            v_margin = self.V_margin
-            h_margin = self.H_margin
-            print(f"Margin correction : Clicked at x: {x} y: {y}")
-            # check if mouse is inside the bounds of the board
-            if 0 < y < self.pixmap().height() and 0 < x < self.pixmap().width():
-                # convert widget coordinate to state indexes
-                row = int(y * self.h / self.pixmap().height())
-                col = int(x * self.w / self.pixmap().width())
-                print(f"Map index clicked: row {row} col {col}")
-                self.model.set_cell(row, col, 255)
-                self.updateView()
-#
+        return x, y
+
     def mouseMoveEvent(self, event):
         """Slot for mouse move event (Override)"""
-#
-#
-        if event.buttons() == Qt.LeftButton and self.drawing:  # if left click and self.drawing, draw living cells
-            x = event.pos().x() - self.V_margin
-            y = event.pos().y() - self.H_margin
-            # check if mouse is inside the bounds of the board
-            if 0 < y < self.pixmap().height() and 0 < x < self.pixmap().width():
-                # convert widget coordinate to state indexes
-                row = int(y * self.h / self.pixmap().height())
-                col = int(x * self.w / self.pixmap().width())
-                print(f"Map index clicked: row {row} col {col}")
-                self.model.set_cell(row, col, 255)
-#
-                if (timer() - self.lastUpdate) > 0.04:
-                    self.updateView()
-#
-        if event.buttons() == Qt.RightButton and self.drawing:  # if right click and self.drawing, kill living cells
-            x = event.pos().x() - self.V_margin
-            y = event.pos().y() - self.H_margin
-            # check if mouse is inside the bounds of the board
-            if 0 < y < self.pixmap().height() and 0 < x < self.pixmap().width():
-                # convert widget coordinate to state indexes
-                row = int(y * self.h / self.pixmap().height())
-                col = int(x * self.w / self.pixmap().width())
-                print(f"Map index clicked: row {row} col {col}")
-                self.model.set_cell(row, col, 0)
-                if (timer() - self.lastUpdate) > 0.04:
-                    self.updateView()
+        self.handleMouseMoveEvent(event, mouseButton=Qt.LeftButton, color=255)
+        self.handleMouseMoveEvent(event, mouseButton=Qt.RightButton, color=0)
 
     def mouseReleaseEvent(self, event):
         """Slot for mouse release event (Override)"""
@@ -184,3 +132,58 @@ class MapViewer(QLabel):
             self.drawing = False
         if event.button() == Qt.RightButton and self.drawing:
             self.drawing = False
+
+    def handleMouseClickEvent(self, event, mouseButton, color):
+        """Utility method to handle mouse click event on mapViewer object..
+
+        :param event: event to handle.
+        :param mouseButton: Qt mouseButton.
+        :param color: The color pixel will be painted.
+
+        """
+        if event.button() == mouseButton:
+            self.drawing = True
+            x, y = self.getXYPosition(event, marginCorrection=True)
+            # check if mouse is inside the bounds of the board
+            if self.isInBoardBounds(x, y):
+                # convert widget coordinate to state indexes
+                row, col = self.getRowCol(x, y)
+                self.model.set_cell(row, col, color)
+                self.updateView()
+
+    def handleMouseMoveEvent(self, event, mouseButton, color):
+        """Utility method to handle mouse move event on mapViewer object.
+
+        :param event: event to handle.
+        :param mouseButton: Qt mouseButton.
+        :param color: The color pixel will be painted.
+
+        """
+        if event.buttons() == mouseButton and self.drawing:  # if left click and self.drawing, draw living cells
+            x, y = self.getXYPosition(event, marginCorrection=True)
+            if self.isInBoardBounds(x, y):
+                # convert widget coordinate to state indexes
+                row, col = self.getRowCol(x, y)
+                self.model.set_cell(row, col, color)
+                if (timer() - self.lastUpdate) > 0.04:
+                    self.updateView()
+
+    def getRowCol(self, x, y):
+        """Utility to get row and column from of pixel based on x, y position
+
+        :param x:
+        :param y:
+        :return:
+        """
+        row = int(y * self.h / self.pixmap().height())
+        col = int(x * self.w / self.pixmap().width())
+        return row, col
+
+    def isInBoardBounds(self, x, y):
+        """Utility to indicate if click was inside of pixmap.
+
+        :param x: x position with margin correction
+        :param y: y position with margin correction
+        :return: bool indicating is this click inside of pixmap.
+        """
+        return 0 < y < self.pixmap().height() and 0 < x < self.pixmap().width()
